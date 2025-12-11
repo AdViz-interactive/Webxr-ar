@@ -26,20 +26,11 @@
   </div>
   <div id="app"></div>
 
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@r128/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@r128/examples/jsm/"
-    }
-  }
-  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/three@r150/build/three.min.js"></script>
+  <script async src="https://cdn.jsdelivr.net/npm/three@r150/examples/js/loaders/GLTFLoader.js"></script>
+  <script async src="https://cdn.jsdelivr.net/npm/three@r150/examples/js/webxr/ARButton.js"></script>
 
-  <script type="module">
-    import * as THREE from 'three';
-    import { ARButton } from 'three/addons/webxr/ARButton.js';
-    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-
+  <script>
     let camera, scene, renderer;
     let controller;
     let hitTestSource = null;
@@ -70,13 +61,12 @@
           loadModel();
         } else {
           console.log('Starting AR...');
-          document.body.appendChild(
-            ARButton.createButton(renderer, {
-              requiredFeatures: ['hit-test'],
-              optionalFeatures: ['dom-overlay'],
-              domOverlay: { root: document.body }
-            })
-          );
+          const arButton = THREE.ARButton.createButton(renderer, {
+            requiredFeatures: ['hit-test'],
+            optionalFeatures: ['dom-overlay'],
+            domOverlay: { root: document.body }
+          });
+          document.body.appendChild(arButton);
         }
       };
 
@@ -152,7 +142,7 @@
         return;
       }
       console.log('Loading model from:', modelUrl);
-      const loader = new GLTFLoader();
+      const loader = new THREE.GLTFLoader();
       loader.load(
         modelUrl,
         (gltf) => {
@@ -228,19 +218,24 @@
       renderer.render(scene, camera);
     }
 
-    // Initialize when DOM is ready
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => {
-        console.log('DOM loaded');
+    // Wait for Three.js to load
+    function waitForThree() {
+      if (typeof THREE !== 'undefined' && THREE.ARButton) {
+        console.log('Three.js loaded successfully');
         initThree();
         setupEventListeners();
         animate();
-      });
+      } else {
+        console.log('Waiting for Three.js...');
+        setTimeout(waitForThree, 100);
+      }
+    }
+
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', waitForThree);
     } else {
-      console.log('DOM already loaded');
-      initThree();
-      setupEventListeners();
-      animate();
+      waitForThree();
     }
   </script>
 </body>
